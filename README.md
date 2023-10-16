@@ -46,7 +46,7 @@ And vice versa for the removing of the groupmemberships. The groupmemberships wi
 
 This is intended for scenarios where there are (lots of) shared mailboxes that we want to be requestable as a product. Currently, there is no corresponding productassignments sync for this shared mailbox sync.
 
-This is intended for scenarios where the product sync automatically creates the self service products for shared mailboxes and creates a resource owner for these products. This groupmembership sync is desinged to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products) in the scenario where you'd want the users with full access to act as the resource owner.
+This is intended for scenarios where the product sync automatically creates the self service products for shared mailboxes and creates a resource owner for these products. This groupmembership sync is designed to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products) in the scenario where you'd want the users with full access to act as the resource owner.
 
 ## Getting started
 
@@ -135,8 +135,7 @@ There are multiple ways to authenticate to the Graph API with each has its own p
 
 
 ## Remarks
-- The Productassignments are granted and revoked. Make sure your configuration is correct to avoid unwanted revokes
-This groupmembership sync is desinged to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products). If this is not configured, this sync task might not work (as the resource owner groups probably won't exist) and might need changes accordingly.
+- This Resource Owner sync is designed to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products). If this is not configured, this sync task might not work (as the resource owner groups probably won't exist) and might need changes accordingly.
 
 ## Getting help
 > _For more information on how to configure a HelloID PowerShell scheduled task, please refer to our [documentation](https://docs.helloid.com/hc/en-us/articles/115003253294-Create-Custom-Scheduled-Tasks) pages_
