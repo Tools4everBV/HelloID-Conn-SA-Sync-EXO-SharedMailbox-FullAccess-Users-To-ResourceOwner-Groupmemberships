@@ -1,5 +1,5 @@
 #####################################################
-# HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
+# HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
 #
 # Version: 1.0.0
 #####################################################
