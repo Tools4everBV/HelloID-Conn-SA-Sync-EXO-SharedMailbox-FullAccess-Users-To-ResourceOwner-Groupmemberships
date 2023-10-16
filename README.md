@@ -1,4 +1,4 @@
-# HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
+# HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
 Synchronize Exchange Online users with Full Access to Shared Mailboxes to HelloID Resource Owner Groupmemberships
 
 <a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/network/members"><img src="https://img.shields.io/github/forks/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Forks Badge"/></a>
