@@ -1,17 +1,17 @@
-# HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
+# HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
 Synchronize Exchange Online users with Full Access to Shared Mailboxes to HelloID Resource Owner Groupmemberships
 
-<a href="https://github.com/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/network/members"><img src="https://img.shields.io/github/forks/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Forks Badge"/></a>
-<a href="https://github.com/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/pulls"><img src="https://img.shields.io/github/issues-pr/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Pull Requests Badge"/></a>
-<a href="https://github.com/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/issues"><img src="https://img.shields.io/github/issues/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Issues Badge"/></a>
-<a href="https://github.com/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Tools4everBV/HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships?color=2b9348"></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/network/members"><img src="https://img.shields.io/github/forks/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Forks Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/pulls"><img src="https://img.shields.io/github/issues-pr/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Pull Requests Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/issues"><img src="https://img.shields.io/github/issues/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Issues Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Tools4everBV/HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships?color=2b9348"></a>
 
 | :information_source: Information |
 |:---------------------------|
 | This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.       |
 
 ## Table of Contents
-- [HelloID-SA-Sync-Exchange-Online-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships](#helloid-sa-sync-exchange-online-sharedmailbox-fullaccess-users-to-resourceowner-groupmemberships)
+- [HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships](#HelloID-Conn-SA-Sync-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships)
   - [Table of Contents](#table-of-contents)
   - [Requirements](#requirements)
   - [Introduction](#introduction)
