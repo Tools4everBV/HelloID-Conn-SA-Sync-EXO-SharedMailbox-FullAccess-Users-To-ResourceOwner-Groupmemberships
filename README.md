@@ -6,23 +6,23 @@ Synchronize Exchange Online users with Full Access to Shared Mailboxes to HelloI
 <a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/issues"><img src="https://img.shields.io/github/issues/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Issues Badge"/></a>
 <a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships?color=2b9348"></a>
 
-| :information_source: Information |
-|:---------------------------|
-| This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.       |
+| :information_source: Information                                                                                                                                                                                                                                                                                                                                                       |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements. |
 
 ## Table of Contents
-- [HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships](#HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships)
+- [HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships](#helloid-conn-sa-sync-exo-sharedmailbox-fullaccess-users-to-resourceowner-groupmemberships)
   - [Table of Contents](#table-of-contents)
   - [Requirements](#requirements)
   - [Introduction](#introduction)
   - [Getting started](#getting-started)
-    - [Create an API key and secret for HelloID](#create-an-api-key-and-secret-for-helloid)
+      - [Create an API key and secret](#create-an-api-key-and-secret)
     - [Installing the Microsoft Exchange Online PowerShell V3.1 module](#installing-the-microsoft-exchange-online-powershell-v31-module)
-    - [Getting the Azure AD graph API access](#getting-the-azure-ad-graph-api-access)
-      - [Creating the Azure AD App Registration and certificate](#creating-the-azure-ad-app-registration-and-certificate)
+    - [Getting the Microsoft Entra ID graph API access](#getting-the-microsoft-entra-id-graph-api-access)
+      - [Creating the Microsoft Entra ID App Registration and certificate](#creating-the-microsoft-entra-id-app-registration-and-certificate)
       - [Application Registration](#application-registration)
       - [Configuring App Permissions](#configuring-app-permissions)
-      - [Assign Azure AD roles to the application](#assign-azure-ad-roles-to-the-application)
+      - [Assign Microsoft Entra ID roles to the application](#assign-microsoft-entra-id-roles-to-the-application)
       - [Authentication and Authorization](#authentication-and-authorization)
     - [Synchronization settings](#synchronization-settings)
   - [Remarks](#remarks)
@@ -46,11 +46,12 @@ And vice versa for the removing of the groupmemberships. The groupmemberships wi
 
 This is intended for scenarios where there are (lots of) shared mailboxes that we want to be requestable as a product. Currently, there is no corresponding productassignments sync for this shared mailbox sync.
 
-This is intended for scenarios where the product sync automatically creates the self service products for shared mailboxes and creates a resource owner for these products. This groupmembership sync is designed to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products) in the scenario where you'd want the users with full access to act as the resource owner.
+This is intended for scenarios where the product sync automatically creates the self service products for shared mailboxes and creates a resource owner for these products. This groupmembership sync is designed to work in combination with the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-To-SelfService-Products) in the scenario where you'd want the users with full access to act as the resource owner.
 
 ## Getting started
 
-### Create an API key and secret for HelloID
+#### Create an API key and secret
+
 1. Go to the `Manage portal > Security > API` section.
 2. Click on the `Add Api key` button to create a new API key.
 3. Optionally, you can add a note that will describe the purpose of this API key
@@ -58,20 +59,19 @@ This is intended for scenarios where the product sync automatically creates the 
 5. Click on the `Save` button to save the API key.
 6. Go to the `Manage portal > Automation > Variable library` section and confim that the auto variables specified in the [connection settings](#connection-settings) are available.
 
-
 ### Installing the Microsoft Exchange Online PowerShell V3.1 module
 Since we use the cmdlets from the Microsoft Exchange Online PowerShell module, it is required this module is installed and available for the service account.
 Please follow the [Microsoft documentation on how to install the module](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#install-and-maintain-the-exchange-online-powershell-module). 
 
-### Getting the Azure AD graph API access
-#### Creating the Azure AD App Registration and certificate
+### Getting the Microsoft Entra ID graph API access
+#### Creating the Microsoft Entra ID App Registration and certificate
 > _The steps below are based on the [Microsoft documentation](https://docs.microsoft.com/en-us/powershell/exchange/app-only-auth-powershell-v2?view=exchange-ps) as of the moment of release. The Microsoft documentation should always be leading and is susceptible to change. The steps below might not reflect those changes._
 > >**Please note that our steps differ from the current documentation as we use Access Token Based Authentication instead of Certificate Based Authentication**
 
 #### Application Registration
-The first step is to register a new **Azure Active Directory Application**. The application is used to connect to Exchange and to manage permissions.
+The first step is to register a new **Microsoft Entra ID Application**. The application is used to connect to Exchange and to manage permissions.
 
-* Navigate to **App Registrations** in Azure, and select “New Registration” (**Azure Portal > Azure Active Directory > App Registration > New Application Registration**).
+* Navigate to **App Registrations** in Microsoft Entra ID, and select “New Registration” (**Microsoft Entra Portal > Microsoft Entra ID > App Registration > New Application Registration**).
 * Next, give the application a name. In this example we are using “**ExO PowerShell CBA**” as application name.
 * Specify who can use this application (**Accounts in this organizational directory only**).
 * Specify the Redirect URI. You can enter any url as a redirect URI value. In this example we used http://localhost because it doesn't have to resolve.
@@ -82,7 +82,7 @@ Some key items regarding the application are the Application ID (which is the Cl
 #### Configuring App Permissions
 The [Microsoft Graph documentation](https://docs.microsoft.com/en-us/graph) provides details on which permission are required for each permission type.
 
-* To assign your application the right permissions, navigate to **Azure Portal > Azure Active Directory > App Registrations**.
+* To assign your application the right permissions, navigate to **Microsoft Entra Portal > Microsoft Entra ID > App Registrations**.
 * Select the application we created before, and select “**API Permissions**” or “**View API Permissions**”.
 * To assign a new permission to your application, click the “**Add a permission**” button.
 * From the “**Request API Permissions**” screen click “**Office 365 Exchange Online**”.
@@ -91,9 +91,9 @@ The [Microsoft Graph documentation](https://docs.microsoft.com/en-us/graph) prov
   *	Manage Exchange As Application ***Exchange.ManageAsApp***
 * To grant admin consent to our application press the “**Grant admin consent for TENANT**” button.
 
-#### Assign Azure AD roles to the application
-Azure AD has more than 50 admin roles available. The **Exchange Administrator** role should provide the required permissions for any task in Exchange Online PowerShell. However, some actions may not be allowed, such as managing other admin accounts, for this the Global Administrator would be required. and Exchange Administrator roles. Please note that the required role may vary based on your configuration.
-* To assign the role(s) to your application, navigate to **Azure Portal > Azure Active Directory > Roles and administrators**.
+#### Assign Microsoft Entra ID roles to the application
+Microsoft Entra ID has more than 50 admin roles available. The **Exchange Administrator** role should provide the required permissions for any task in Exchange Online PowerShell. However, some actions may not be allowed, such as managing other admin accounts, for this the Global Administrator would be required. and Exchange Administrator roles. Please note that the required role may vary based on your configuration.
+* To assign the role(s) to your application, navigate to **Microsoft Entra Portal > Microsoft Entra ID > Roles and administrators**.
 * On the Roles and administrators page that opens, find and select one of the supported roles e.g. “**Exchange Administrator**” by clicking on the name of the role (not the check box) in the results.
 * On the Assignments page that opens, click the “**Add assignments**” button.
 * In the Add assignments flyout that opens, **find and select the app that we created before**.
@@ -103,35 +103,36 @@ Azure AD has more than 50 admin roles available. The **Exchange Administrator** 
 For more information about the permissions, please see the Microsoft docs:
 * [Permissions in Exchange Online](https://learn.microsoft.com/en-us/exchange/permissions-exo/permissions-exo).
 * [Find the permissions required to run any Exchange cmdlet](https://learn.microsoft.com/en-us/powershell/exchange/find-exchange-cmdlet-permissions?view=exchange-ps).
-* [View and assign administrator roles in Azure Active Directory](https://learn.microsoft.com/en-us/powershell/exchange/find-exchange-cmdlet-permissions?view=exchange-ps).
+* [View and assign administrator roles in Microsoft Entra ID](https://learn.microsoft.com/en-us/powershell/exchange/find-exchange-cmdlet-permissions?view=exchange-ps).
 
 #### Authentication and Authorization
 There are multiple ways to authenticate to the Graph API with each has its own pros and cons, in this example we are using the Authorization Code grant type.
 
-*	First we need to get the **Client ID**, go to the **Azure Portal > Azure Active Directory > App Registrations**.
+*	First we need to get the **Client ID**, go to the **Microsoft Entra Portal > Microsoft Entra ID > App Registrations**.
 *	Select your application and copy the Application (client) ID value.
 *	After we have the Client ID we also have to create a **Client Secret**.
-*	From the Azure Portal, go to **Azure Active Directory > App Registrations**.
+*	From the Microsoft Entra Portal, go to **Microsoft Entra ID > App Registrations**.
 *	Select the application we have created before, and select "**Certificates and Secrets**". 
 *	Under “Client Secrets” click on the “**New Client Secret**” button to create a new secret.
 *	Provide a logical name for your secret in the Description field, and select the expiration date for your secret.
 *	It's IMPORTANT to copy the newly generated client secret, because you cannot see the value anymore after you close the page.
-*	At last we need to get the **Tenant ID**. This can be found in the Azure Portal by going to **Azure Active Directory > Overview**.
+*	At last we need to get the **Tenant ID**. This can be found in the Microsoft Entra Portal by going to **Microsoft Entra ID > Overview**.
 
 ### Synchronization settings
-| Variable name | Description   | Notes |
-| ------------- | -----------   | ----- |
-| $portalBaseUrl    | String value of HelloID Base Url  | (Default Global Variable) |
-| $portalApiKey | String value of HelloID Api Key   | (Default Global Variable) |
-| $portalApiSecret  | String value of HelloID Api Secret    | (Default Global Variable) |
-| $AzureADtenantID    | String value of Azure AD Tenant ID  | Recommended to set as Global Variable |
-| $AzureADAppId | String value of Azure AD App ID  | Recommended to set as Global Variable |
-| $AzureADAppSecret  | String value of Azure AD App Secret  | Recommended to set as Global Variable |
-| $exchangeMailboxesFilter   | String value of seachfilter of which Exchange shared mailboxes to include   | Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all shared mailboxes will be queried. This should match the filter used in the configuration of the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-Exchange-Online-SharedMailbox-To-SelfService-Products)  |
-| $resourceOwnerGroupSource  | String value of source of the resource groups in HelloID | Ff source is any other than "Local", the sync of the target system itself might overwrite the memberships set form this sync |
-| $resourceOwnerGroupPrefix  | String value of prefix to recognize the resource owner group | Optional, the owner group will be queried based on the shared mailbox name and the specified prefix and suffix  |
-| $resourceOwnerGroupSuffix  | String value of suffix to recognize the resource owner group | Optional, the owner group will be queried based on the shared mailbox name and the specified prefix and suffix  |
-| $removeMembers  | Boolean value of whether to remove the groupmemberships when they are no longer in scope |  |
+| Variable name             | Description                                                                              | Notes                                                                                                                                                                                                                                                                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| $portalBaseUrl            | String value of HelloID Base Url                                                         | (Default Global Variable)                                                                                                                                                                                                                                                                                                        |
+| $portalApiKey             | String value of HelloID Api Key                                                          | (Default Global Variable)                                                                                                                                                                                                                                                                                                        |
+| $portalApiSecret          | String value of HelloID Api Secret                                                       | (Default Global Variable)                                                                                                                                                                                                                                                                                                        |
+| $EntraOrganization        | String value of Microsoft Entra ID Organization                                          | Recommended to set as Global Variable                                                                                                                                                                                                                                                                                            |
+| $EntraTenantID            | String value of Microsoft Entra ID Tenant ID                                             | Recommended to set as Global Variable                                                                                                                                                                                                                                                                                            |
+| $EntraAppID               | String value of Microsoft Entra ID App ID                                                | Recommended to set as Global Variable                                                                                                                                                                                                                                                                                            |
+| $EntraAppSecret           | String value of Microsoft Entra ID App Secret                                            | Recommended to set as Global Variable                                                                                                                                                                                                                                                                                            |
+| $exchangeMailboxesFilter  | String value of seachfilter of which Exchange shared mailboxes to include                | Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all shared mailboxes will be queried. This should match the filter used in the configuration of the [Exchange Online Shared Mailboxes to Products Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-To-SelfService-Products) |
+| $resourceOwnerGroupSource | String value of source of the resource groups in HelloID                                 | Ff source is any other than "Local", the sync of the target system itself might overwrite the memberships set form this sync                                                                                                                                                                                                     |
+| $resourceOwnerGroupPrefix | String value of prefix to recognize the resource owner group                             | Optional, the owner group will be queried based on the shared mailbox name and the specified prefix and suffix                                                                                                                                                                                                                   |
+| $resourceOwnerGroupSuffix | String value of suffix to recognize the resource owner group                             | Optional, the owner group will be queried based on the shared mailbox name and the specified prefix and suffix                                                                                                                                                                                                                   |
+| $removeMembers            | Boolean value of whether to remove the groupmemberships when they are no longer in scope |                                                                                                                                                                                                                                                                                                                                  |
 
 
 ## Remarks

@@ -25,12 +25,11 @@ $WarningPreference = "Continue"
 # $portalApiSecret = "" # Set from Global Variable
 
 # Exchange Online Connection Configuration
-# $AzureADOrganization = "" # Set from Global Variable
-# $AzureADtenantID = "" # Set from Global Variable
-# $AzureADAppId = "" # Set from Global Variable
-# $AzureADAppSecret = "" # Set from Global Variable
+# $EntraIDOrganization = "" # Set from Global Variable
+# $EntraIDtenantID = "" # Set from Global Variable
+# $EntraIDAppId = "" # Set from Global Variable
+# $EntraIDAppSecret = "" # Set from Global Variable
 $exchangeMailboxesFilter = "DisplayName -like 'Shared-*'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
-# $exchangeMailboxesFilter = "DisplayName -eq 'financien de Ark'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
 
 # PowerShell commands to import
 $exchangeOnlineCommands = @(
@@ -235,12 +234,12 @@ try {
     Write-Verbose "Creating Access Token"
 
     $baseUri = "https://login.microsoftonline.com/"
-    $authUri = $baseUri + "$AzureADTenantId/oauth2/token"
+    $authUri = $baseUri + "$EntraIDtenantID/oauth2/token"
     
     $body = @{
         grant_type    = "client_credentials"
-        client_id     = "$AzureADAppID"
-        client_secret = "$AzureADAppSecret"
+        client_id     = "$EntraIDAppId"
+        client_secret = "$EntraIDAppSecret"
         resource      = "https://outlook.office365.com"
     }
     
@@ -251,8 +250,8 @@ try {
     Write-Verbose "Connecting to Exchange Online"
 
     $exchangeSessionParams = @{
-        Organization     = $AzureADOrganization
-        AppID            = $AzureADAppID
+        Organization     = $EntraIDOrganization
+        AppID            = $EntraIDAppId
         AccessToken      = $accessToken
         CommandName      = $exchangeOnlineCommands
         ShowBanner       = $false
@@ -285,14 +284,24 @@ try {
         , "RecipientTypeDetails"
     )
 
-    $exchangeQuerySplatParams = @{
-        Filter               = $exchangeMailboxesFilter
-        Properties           = $properties
-        RecipientTypeDetails = "SharedMailbox"
-        ResultSize           = "Unlimited"
+    if ($exchangeMailboxesFilter -eq $null) {
+        $exchangeQuerySplatParams = @{
+            Properties           = $properties
+            RecipientTypeDetails = "SharedMailbox"
+            ResultSize           = "Unlimited"
+        }
+        Hid-Write-Status -Event Information -Message "Querying Exchange Online Shared Mailboxes"
+    }
+    else {
+        $exchangeQuerySplatParams = @{
+            Filter               = $exchangeMailboxesFilter
+            Properties           = $properties
+            RecipientTypeDetails = "SharedMailbox"
+            ResultSize           = "Unlimited"
+        } 
+        Hid-Write-Status -Event Information -Message "Querying Exchange Online Shared Mailboxes that match filter [$($exchangeQuerySplatParams.Filter)]"
     }
 
-    Write-Verbose "Querying Exchange Online Shared Mailboxes that match filter [$($exchangeQuerySplatParams.Filter)]"
     $exoMailboxes = Get-EXOMailbox @exchangeQuerySplatParams | Select-Object $properties
 
     if (($exoMailboxes | Measure-Object).Count -eq 0) {
@@ -335,30 +344,6 @@ catch {
 }
 #endregion Get Exchange online groups
 
-#region Get Exchange online groups
-# Exchange Online groups are needed so all the attributes are available
-try {
-    Write-Verbose "Querying Exchange groups"
-
-    $exoGroups = Get-Group -ResultSize Unlimited -Verbose:$false
-
-    if (($exoGroups | Measure-Object).Count -eq 0) {
-        throw "No Groups have been found"
-    }
-    
-    $exoGroupsGroupedOnDisplayname = $exoGroups | Group-Object Displayname -AsHashTable  
-
-    Hid-Write-Status -Event Success -Message "Successfully queried Exchange Online Groups. Result count: $(($groups | Measure-Object).Count)"
-}
-catch { 
-    $ex = $PSItem
-    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-
-    Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-
-    throw "Error querying all Exchange groups. Error Message: $($errorMessage.AuditErrorMessage)"
-}
-#endregion Get Exchange online groups
 
 #region Get permissions to Shared Mailbox
 try {
@@ -372,7 +357,7 @@ try {
                 Name              = $exoMailbox.Name
                 UserPrincipalName = $exoMailbox.UserPrincipalName
                 Id                = $exoMailbox.Id
-                Users = [System.Collections.ArrayList]@()
+                Users             = [System.Collections.ArrayList]@()
             }
 
             Write-Verbose "Querying Full Access Permissions to Mailbox [$($exoMailbox.UserPrincipalName)]"
@@ -390,9 +375,9 @@ try {
                     $fullAccessUser = $exoUsersGroupedOnUserPrincipalName[$($fullAccessPermission.user)]
                     if ($null -ne $fullAccessUser) {
                         $userWithFullAccessObject = [PSCustomObject]@{
-                            Id                   = $fullAccessUser.id
-                            DisplayName          = $fullAccessUser.displayName
-                            UserPrincipalName    = $fullAccessUser.userPrincipalName
+                            Id                = $fullAccessUser.id
+                            DisplayName       = $fullAccessUser.displayName
+                            UserPrincipalName = $fullAccessUser.userPrincipalName
                         }
 
                         [void]$exoMailboxWithFullAccessUsersObject.Users.Add($userWithFullAccessObject)
@@ -623,15 +608,15 @@ try {
 
     # Define new groupmemberships
     $newGroupMemberships = [System.Collections.ArrayList]@()
-    $newGroupMemberships = $newGroupMembershipObjects | Where-Object { $_ -notin $existingGroupMembershipObjects }
+    $newGroupMemberships = $newGroupMembershipObjects | Where-Object { $_.UserId -notin $existingGroupMembershipObjects.UserId }
 
     # Define obsolete groupmemberships
     $obsoleteGroupMemberships = [System.Collections.ArrayList]@()
-    $obsoleteGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_ -notin $newGroupMembershipObjects }
+    $obsoleteGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_.UserId -notin $newGroupMembershipObjects.UserId }
 
     # Define existing groupmemberships
     $existingGroupMemberships = [System.Collections.ArrayList]@()
-    $existingGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_ -notin $obsoleteGroupMemberships }
+    $existingGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_.UserId -notin $obsoleteGroupMemberships.UserId }
 
     # Define total groupmemberships (existing + new)
     $totalGroupMemberships = ($(($existingGroupMemberships | Measure-Object).Count) + $(($newGroupMemberships | Measure-Object).Count))
