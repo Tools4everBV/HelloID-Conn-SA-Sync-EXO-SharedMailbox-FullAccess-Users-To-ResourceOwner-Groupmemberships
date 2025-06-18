@@ -25,12 +25,11 @@ $WarningPreference = "Continue"
 # $portalApiSecret = "" # Set from Global Variable
 
 # Exchange Online Connection Configuration
-# $AzureADOrganization = "" # Set from Global Variable
-# $AzureADtenantID = "" # Set from Global Variable
-# $AzureADAppId = "" # Set from Global Variable
-# $AzureADAppSecret = "" # Set from Global Variable
+# $EntraIDOrganization = "" # Set from Global Variable
+# $EntraIDtenantID = "" # Set from Global Variable
+# $EntraIDAppId = "" # Set from Global Variable
+# $EntraIDAppSecret = "" # Set from Global Variable
 $exchangeMailboxesFilter = "DisplayName -like 'Shared-*'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
-# $exchangeMailboxesFilter = "DisplayName -eq 'financien de Ark'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
 
 # PowerShell commands to import
 $exchangeOnlineCommands = @(
@@ -235,12 +234,12 @@ try {
     Write-Verbose "Creating Access Token"
 
     $baseUri = "https://login.microsoftonline.com/"
-    $authUri = $baseUri + "$AzureADTenantId/oauth2/token"
+    $authUri = $baseUri + "$EntraIDtenantID/oauth2/token"
     
     $body = @{
         grant_type    = "client_credentials"
-        client_id     = "$AzureADAppID"
-        client_secret = "$AzureADAppSecret"
+        client_id     = "$EntraIDAppId"
+        client_secret = "$EntraIDAppSecret"
         resource      = "https://outlook.office365.com"
     }
     
@@ -251,8 +250,8 @@ try {
     Write-Verbose "Connecting to Exchange Online"
 
     $exchangeSessionParams = @{
-        Organization     = $AzureADOrganization
-        AppID            = $AzureADAppID
+        Organization     = $EntraIDOrganization
+        AppID            = $EntraIDAppId
         AccessToken      = $accessToken
         CommandName      = $exchangeOnlineCommands
         ShowBanner       = $false
@@ -285,14 +284,24 @@ try {
         , "RecipientTypeDetails"
     )
 
-    $exchangeQuerySplatParams = @{
-        Filter               = $exchangeMailboxesFilter
-        Properties           = $properties
-        RecipientTypeDetails = "SharedMailbox"
-        ResultSize           = "Unlimited"
+    if ($exchangeMailboxesFilter -eq $null) {
+        $exchangeQuerySplatParams = @{
+            Properties           = $properties
+            RecipientTypeDetails = "SharedMailbox"
+            ResultSize           = "Unlimited"
+        }
+        Hid-Write-Status -Event Information -Message "Querying Exchange Online Shared Mailboxes"
+    }
+    else {
+        $exchangeQuerySplatParams = @{
+            Filter               = $exchangeMailboxesFilter
+            Properties           = $properties
+            RecipientTypeDetails = "SharedMailbox"
+            ResultSize           = "Unlimited"
+        } 
+        Hid-Write-Status -Event Information -Message "Querying Exchange Online Shared Mailboxes that match filter [$($exchangeQuerySplatParams.Filter)]"
     }
 
-    Write-Verbose "Querying Exchange Online Shared Mailboxes that match filter [$($exchangeQuerySplatParams.Filter)]"
     $exoMailboxes = Get-EXOMailbox @exchangeQuerySplatParams | Select-Object $properties
 
     if (($exoMailboxes | Measure-Object).Count -eq 0) {
@@ -335,30 +344,6 @@ catch {
 }
 #endregion Get Exchange online groups
 
-#region Get Exchange online groups
-# Exchange Online groups are needed so all the attributes are available
-try {
-    Write-Verbose "Querying Exchange groups"
-
-    $exoGroups = Get-Group -ResultSize Unlimited -Verbose:$false
-
-    if (($exoGroups | Measure-Object).Count -eq 0) {
-        throw "No Groups have been found"
-    }
-    
-    $exoGroupsGroupedOnDisplayname = $exoGroups | Group-Object Displayname -AsHashTable  
-
-    Hid-Write-Status -Event Success -Message "Successfully queried Exchange Online Groups. Result count: $(($groups | Measure-Object).Count)"
-}
-catch { 
-    $ex = $PSItem
-    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-
-    Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-
-    throw "Error querying all Exchange groups. Error Message: $($errorMessage.AuditErrorMessage)"
-}
-#endregion Get Exchange online groups
 
 #region Get permissions to Shared Mailbox
 try {
@@ -372,7 +357,7 @@ try {
                 Name              = $exoMailbox.Name
                 UserPrincipalName = $exoMailbox.UserPrincipalName
                 Id                = $exoMailbox.Id
-                Users = [System.Collections.ArrayList]@()
+                Users             = [System.Collections.ArrayList]@()
             }
 
             Write-Verbose "Querying Full Access Permissions to Mailbox [$($exoMailbox.UserPrincipalName)]"
@@ -390,9 +375,9 @@ try {
                     $fullAccessUser = $exoUsersGroupedOnUserPrincipalName[$($fullAccessPermission.user)]
                     if ($null -ne $fullAccessUser) {
                         $userWithFullAccessObject = [PSCustomObject]@{
-                            Id                   = $fullAccessUser.id
-                            DisplayName          = $fullAccessUser.displayName
-                            UserPrincipalName    = $fullAccessUser.userPrincipalName
+                            Id                = $fullAccessUser.id
+                            DisplayName       = $fullAccessUser.displayName
+                            UserPrincipalName = $fullAccessUser.userPrincipalName
                         }
 
                         [void]$exoMailboxWithFullAccessUsersObject.Users.Add($userWithFullAccessObject)
@@ -403,7 +388,7 @@ try {
             [void]$exoMailboxesWithFullAccessUsers.Add($exoMailboxWithFullAccessUsersObject)
 
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Success "Successfully queried Full Access Permissions to Mailbox [$($exoMailbox.UserPrincipalName)]. Result count: $(($fullAccessPermissions | Measure-Object).Count)"
+                Write-Verbose "Successfully queried Full Access Permissions to Mailbox [$($exoMailbox.UserPrincipalName)]. Result count: $(($fullAccessPermissions | Measure-Object).Count)"
             }
         }
         catch {
@@ -497,7 +482,7 @@ try {
             [void]$helloIDGroupsWithMembers.Add($helloIDGroup)
 
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Success "Successfully queried HelloID group [$($helloIDGroup.name) ($($helloIDGroup.groupGuid))] with members. Result count: $(($helloIDGroup.users | Measure-Object).Count)"
+                Write-Verbose "Successfully queried HelloID group [$($helloIDGroup.name) ($($helloIDGroup.groupGuid))] with members. Result count: $(($helloIDGroup.users | Measure-Object).Count)"
             }
         }
         catch {
@@ -552,7 +537,7 @@ try {
             $helloIDResourceOwnerGroup = $helloIDGroupsWithMembersGroupedBySourceAndName["$($resourceOwnerGroupName)"]
             if ($null -eq $helloIDResourceOwnerGroup) {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "Resource owner group [$($resourceOwnerGroupName)] for Shared Mailbox [$($fullAccessUser.DisplayName)] not found in HelloID"
+                    Write-Verbose "Resource owner group [$($resourceOwnerGroupName)] for Shared Mailbox [$($fullAccessUser.DisplayName)] not found in HelloID"
                 }
 
                 # Skip further actions for this record
@@ -561,7 +546,7 @@ try {
         }
         else {
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Warning "No Resource owner group name provided for Shared Mailbox [$($fullAccessUser.DisplayName)]"
+                Write-Verbose "No Resource owner group name provided for Shared Mailbox [$($fullAccessUser.DisplayName)]"
             }
         }
 
@@ -572,7 +557,7 @@ try {
             $helloIDUser = $helloIDUsersGroupedOnUserGUID["$($helloIDResourceOwnerGroupUser)"]
             if ($null -eq $helloIDUser) {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No HelloID user found for Exchange User Resource owner group [$($helloIDResourceOwnerGroupUser)]"
+                    Write-Verbose "No HelloID user found for Exchange User Resource owner group [$($helloIDResourceOwnerGroupUser)]"
                 }
 
                 # Skip further actions for this record
@@ -597,7 +582,7 @@ try {
                 $helloIDUser = $helloIDUsersGroupedOnUserName["$($exoUserWithFullAcces.UserPrincipalName)"]
                 if ($null -eq $helloIDUser) {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "No HelloID user found for Exchange User Resource owner group [$($exoUserWithFullAcces.UserPrincipalName)]"
+                        Write-Verbose "No HelloID user found for Exchange User Resource owner group [$($exoUserWithFullAcces.UserPrincipalName)]"
                     }
 
                     # Skip further actions for this record
@@ -606,7 +591,7 @@ try {
             }
             else {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No UserPrincipalName provided for full access user [$($exoUserWithFullAcces.Id)]"
+                    Write-Verbose "No UserPrincipalName provided for full access user [$($exoUserWithFullAcces.Id)]"
                 }
             }
 
@@ -623,15 +608,15 @@ try {
 
     # Define new groupmemberships
     $newGroupMemberships = [System.Collections.ArrayList]@()
-    $newGroupMemberships = $newGroupMembershipObjects | Where-Object { $_ -notin $existingGroupMembershipObjects }
+    $newGroupMemberships = $newGroupMembershipObjects | Where-Object { $_.UserId -notin $existingGroupMembershipObjects.UserId }
 
     # Define obsolete groupmemberships
     $obsoleteGroupMemberships = [System.Collections.ArrayList]@()
-    $obsoleteGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_ -notin $newGroupMembershipObjects }
+    $obsoleteGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_.UserId -notin $newGroupMembershipObjects.UserId }
 
     # Define existing groupmemberships
     $existingGroupMemberships = [System.Collections.ArrayList]@()
-    $existingGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_ -notin $obsoleteGroupMemberships }
+    $existingGroupMemberships = $existingGroupMembershipObjects | Where-Object { $_.UserId -notin $obsoleteGroupMemberships.UserId }
 
     # Define total groupmemberships (existing + new)
     $totalGroupMemberships = ($(($existingGroupMemberships | Measure-Object).Count) + $(($newGroupMemberships | Measure-Object).Count))
@@ -665,7 +650,7 @@ try {
         # Add HelloID User to HelloID Group
         try {
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Information "Adding HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
+                Write-Verbose "Adding HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
             }
 
             $addUserToGroupBody = [PSCustomObject]@{
@@ -683,12 +668,12 @@ try {
                 $addUserToGroupSuccess++
 
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Success "Successfully added HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
+                    Write-Verbose "Successfully added HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
                 }
             }
             else {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "DryRun: Would add HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
+                    Write-Verbose "DryRun: Would add HelloID user [$($newGroupMembership.UserUsername) ($($newGroupMembership.UserId))] to HelloID group [$($newGroupMembership.GroupName) ($($newGroupMembership.GroupId))]"
                 }
             }
         }
@@ -721,7 +706,7 @@ try {
             # Remove HelloID User from HelloID Group
             try {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Information "Removing HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
+                    Write-Verbose "Removing HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
                 }
 
                 $splatWebRequest = @{
@@ -734,12 +719,12 @@ try {
                     $removeUserFromGroupSuccess++
 
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Success "Successfully removed HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
+                        Write-Verbose "Successfully removed HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
                     }
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "DryRun: Would remove HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
+                        Write-Verbose "DryRun: Would remove HelloID user [$($obsoleteGroupMembership.UserUsername) ($($obsoleteGroupMembership.UserId))] to HelloID group [$($obsoleteGroupMembership.GroupName) ($($obsoleteGroupMembership.GroupId))]"
                     }
                 }
             }
