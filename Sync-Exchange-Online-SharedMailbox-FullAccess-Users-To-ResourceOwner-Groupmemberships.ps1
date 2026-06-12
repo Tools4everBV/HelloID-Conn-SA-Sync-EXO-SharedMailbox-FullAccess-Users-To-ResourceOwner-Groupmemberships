@@ -33,7 +33,7 @@ $WarningPreference = "Continue"
 $exchangeMailboxesFilter = "DisplayName -like 'Shared-*'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
 
 # PowerShell commands to import
-$exchangeOnlineCommands = @(
+$commands = @(
     "Get-User"
     , "Get-Group"
     , "Get-EXOMailbox"
@@ -41,7 +41,7 @@ $exchangeOnlineCommands = @(
 ) # Fixed list of commands required by script - only change when missing commands
 
 #HelloID Configuration
-$resourceOwnerGroupSource = "Local" # Specify the source of the groups - if source is any other than "Local", the sync of the target system itself might overwrite the memberships set form this sync
+$resourceOwnerGroupSource = "Local" # Specify the source of the groups - if source is any other than "Local", the sync of the target system itself might overwrite the memberships set from this sync
 # The HelloID Resource owner group will be queried based on the shared mailbox name and the specified prefix and suffix
 $resourceOwnerGroupPrefix = "" # Specify prefix to recognize the resource owner group
 $resourceOwnerGroupSuffix = " Resource Owner" # Specify suffix to recognize the resource owner group
@@ -212,10 +212,20 @@ function Invoke-HIDRestmethod {
 
 function Get-MSEntraCertificate {
     [CmdletBinding()]
-    param()
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $CertificateBase64String,
+        
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $CertificatePassword
+    )
     try {
-        $rawCertificate = [system.convert]::FromBase64String($EntraIdCertificateBase64String)
-        $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($rawCertificate, $EntraIdCertificatePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+        $rawCertificate = [system.convert]::FromBase64String($CertificateBase64String)
+        $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($rawCertificate, $CertificatePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
         Write-Output $certificate
     }
     catch {
@@ -232,7 +242,7 @@ try {
     $actionMessage = "importing module [ExchangeOnlineManagement]"
     $importModuleSplatParams = @{
         Name        = "ExchangeOnlineManagement"
-        Cmdlet      = $exchangeOnlineCommands
+        Cmdlet      = $commands
         Verbose     = $false
         ErrorAction = "Stop"
     }
@@ -240,7 +250,7 @@ try {
 
     #region Retrieving certificate
     $actionMessage = "retrieving certificate"
-    $certificate = Get-MSEntraCertificate
+    $certificate = Get-MSEntraCertificate -CertificateBase64String $EntraIdCertificateBase64String -CertificatePassword $EntraIdCertificatePassword
     #endregion Retrieving certificate
     
     #region Connect to Microsoft Exchange Online
@@ -271,8 +281,9 @@ catch {
         $warningMessage = "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         $auditMessage = "Error $($actionMessage). Error: $($ex.Exception.Message)"
     }
-    Write-Warning $warningMessage
-    Write-Error $auditMessage
+    Hid-Write-Status -Event Error -Message $warningMessage
+    Hid-Write-Status -Event Error -Message $auditMessage
+    throw $auditMessage
 }
 
 # Get Exchange Online Shared Mailboxes
