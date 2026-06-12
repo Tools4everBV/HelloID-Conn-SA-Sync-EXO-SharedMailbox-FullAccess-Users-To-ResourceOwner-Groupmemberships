@@ -1,7 +1,7 @@
 #####################################################
 # HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships
 #
-# Version: 1.0.0
+# Version: 1.1.0
 #####################################################
 # Set to false to acutally perform actions - Only run as DryRun when testing/troubleshooting!
 $dryRun = $false
@@ -25,14 +25,15 @@ $WarningPreference = "Continue"
 # $portalApiSecret = "" # Set from Global Variable
 
 # Exchange Online Connection Configuration
-# $EntraIDOrganization = "" # Set from Global Variable
-# $EntraIDtenantID = "" # Set from Global Variable
-# $EntraIDAppId = "" # Set from Global Variable
-# $EntraIDAppSecret = "" # Set from Global Variable
+# $EntraIdOrganization = "" # Set from Global Variable
+# $EntraIdAppId = "" # Set from Global Variable
+# $EntraIdCertificateBase64String = "" # Set from Global Variable
+# $EntraIdCertificatePassword = "" # Set from Global Variable
+
 $exchangeMailboxesFilter = "DisplayName -like 'Shared-*'" # Optional, when no filter is provided ($exchangeMailboxesFilter = $null), all mailboxes will be queried
 
 # PowerShell commands to import
-$exchangeOnlineCommands = @(
+$commands = @(
     "Get-User"
     , "Get-Group"
     , "Get-EXOMailbox"
@@ -40,10 +41,10 @@ $exchangeOnlineCommands = @(
 ) # Fixed list of commands required by script - only change when missing commands
 
 #HelloID Configuration
-$resourceOwnerGroupSource = "Local" # Specify the source of the groups - if source is any other than "Local", the sync of the target system itself might overwrite the memberships set form this sync
+$resourceOwnerGroupSource = "Local" # Specify the source of the groups - if source is any other than "Local", the sync of the target system itself might overwrite the memberships set from this sync
 # The HelloID Resource owner group will be queried based on the shared mailbox name and the specified prefix and suffix
 $resourceOwnerGroupPrefix = "" # Specify prefix to recognize the resource owner group
-$resourceOwnerGroupSuffix = " Resource Owners" # Specify suffix to recognize the resource owner group
+$resourceOwnerGroupSuffix = " Resource Owner" # Specify suffix to recognize the resource owner group
 $removeMembers = $true # If true, existing members will be removed if they no longer have full access to the corresponding mailbox - This will overwrite manual added users
 
 #region functions
@@ -208,67 +209,81 @@ function Invoke-HIDRestmethod {
         throw $_
     }
 }
+
+function Get-MSEntraCertificate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $CertificateBase64String,
+        
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $CertificatePassword
+    )
+    try {
+        $rawCertificate = [system.convert]::FromBase64String($CertificateBase64String)
+        $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($rawCertificate, $CertificatePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+        Write-Output $certificate
+    }
+    catch {
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
 #endregion functions
 
 #region script
 Hid-Write-Status -Event Information -Message "Starting synchronization of Exchange Online Users with FullAccess to SharedMailboxes to HelloID ResourceOwner Groupmemberships"
 Hid-Write-Status -Event Information -Message "------[Exchange Online]-----------"
 
-# Import module
-try {
-    $moduleName = "ExchangeOnlineManagement"
-    $importModule = Import-Module -Name $moduleName -ErrorAction Stop -Verbose:$false
-}
+try {    
+    $actionMessage = "importing module [ExchangeOnlineManagement]"
+    $importModuleSplatParams = @{
+        Name        = "ExchangeOnlineManagement"
+        Cmdlet      = $commands
+        Verbose     = $false
+        ErrorAction = "Stop"
+    }
+    $null = Import-Module @importModuleSplatParams
+
+    #region Retrieving certificate
+    $actionMessage = "retrieving certificate"
+    $certificate = Get-MSEntraCertificate -CertificateBase64String $EntraIdCertificateBase64String -CertificatePassword $EntraIdCertificatePassword
+    #endregion Retrieving certificate
+    
+    #region Connect to Microsoft Exchange Online
+    # Docs: https://learn.microsoft.com/en-us/powershell/module/exchange/connect-exchangeonline?view=exchange-ps
+    $actionMessage = "connecting to Microsoft Exchange Online"
+    $createExchangeSessionSplatParams = @{
+        Organization          = $EntraIdOrganization
+        AppID                 = $EntraIdAppId
+        Certificate           = $certificate
+        CommandName           = $commands
+        ShowBanner            = $false
+        ShowProgress          = $false
+        TrackPerformance      = $false
+        SkipLoadingCmdletHelp = $true
+        SkipLoadingFormatData = $true
+        ErrorAction           = "Stop"
+    }
+    $null = Connect-ExchangeOnline @createExchangeSessionSplatParams
+    Write-Information "Connected to Microsoft Exchange Online"
+} 
 catch {
     $ex = $PSItem
-    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-
-    Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-
-    throw "Error importing module [$moduleName]. Error Message: $($errorMessage.AuditErrorMessage)"
-}
-
-# Connect to Exchange
-try {
-    # Create access token
-    Write-Verbose "Creating Access Token"
-
-    $baseUri = "https://login.microsoftonline.com/"
-    $authUri = $baseUri + "$EntraIDtenantID/oauth2/token"
-    
-    $body = @{
-        grant_type    = "client_credentials"
-        client_id     = "$EntraIDAppId"
-        client_secret = "$EntraIDAppSecret"
-        resource      = "https://outlook.office365.com"
+    if (-not [string]::IsNullOrEmpty($ex.Exception.Data.RemoteException.Message)) {
+        $warningMessage = "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Data.RemoteException.Message)"
+        $auditMessage = "Error $($actionMessage). Error: $($ex.Exception.Data.RemoteException.Message)"        
     }
-    
-    $Response = Invoke-RestMethod -Method POST -Uri $authUri -Body $body -ContentType "application/x-www-form-urlencoded" -UseBasicParsing:$true -Verbose:$false
-    $accessToken = $Response.access_token
-
-    # Connect to Exchange Online in an unattended scripting scenario using an access token.
-    Write-Verbose "Connecting to Exchange Online"
-
-    $exchangeSessionParams = @{
-        Organization     = $EntraIDOrganization
-        AppID            = $EntraIDAppId
-        AccessToken      = $accessToken
-        CommandName      = $exchangeOnlineCommands
-        ShowBanner       = $false
-        ShowProgress     = $false
-        TrackPerformance = $false
-        ErrorAction      = "Stop"
+    else {
+        $warningMessage = "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+        $auditMessage = "Error $($actionMessage). Error: $($ex.Exception.Message)"
     }
-    $exchangeSession = Connect-ExchangeOnline @exchangeSessionParams -Verbose:$false
-    
-    Write-Information "Successfully connected to Exchange Online"
-}
-catch {
-    $ex = $PSItem
-    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-
-    Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($errorMessage.VerboseErrorMessage)"
-    throw "Error connecting to Exchange Online. Error Message: $($errorMessage.AuditErrorMessage)"
+    Hid-Write-Status -Event Error -Message $warningMessage
+    Hid-Write-Status -Event Error -Message $auditMessage
+    throw $auditMessage
 }
 
 # Get Exchange Online Shared Mailboxes
