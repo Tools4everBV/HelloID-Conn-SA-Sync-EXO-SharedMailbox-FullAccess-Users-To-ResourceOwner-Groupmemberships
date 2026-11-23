@@ -6,6 +6,14 @@ Synchronize Exchange Online users with Full Access to Shared Mailboxes to HelloI
 <a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/issues"><img src="https://img.shields.io/github/issues/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships" alt="Issues Badge"/></a>
 <a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Tools4everBV/HelloID-Conn-SA-Sync-EXO-SharedMailbox-FullAccess-Users-To-ResourceOwner-Groupmemberships?color=2b9348"></a>
 
+> [!IMPORTANT]
+> **Best Practice - Maximum Synchronization Frequency: Once per week**
+>
+> **Why this maximum?**
+> Resource ownership changes infrequently (weekly or monthly). More frequent synchronization causes unnecessary processing load without business value, as owner changes rarely happen multiple times per week.
+>
+> If a higher frequency is required for your organization, please contact **Tools4ever Support**. This helps us understand your use case and provide proper guidance.
+
 | :information_source: Information                                                                                                                                                                                                                                                                                                                                                       |
 | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements. |
